@@ -1,10 +1,9 @@
-import 'dart:convert';
-
+import 'dart:convert'; //JSON데이터 이용하기 위한 convert패키지 추가
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http; //네트워크 통신을 위한 http패키지 추가
 
-import 'model/book.dart'; //외부 패키지 사용시 임포트
+import 'model/book.dart'; //외부 패키지로 부터 받은 JSON데이터 매핑하기 위해 사용
 //많은 임포트 하다보면 같은 이름을 가진 클래스 함수가 있다 혼동 방지하기 위해 as http 는 이름을 주는 것
 //kakao
 //네이티브 앱 키	98743835306c707265dce7690f1d43e2
@@ -15,19 +14,19 @@ import 'model/book.dart'; //외부 패키지 사용시 임포트
 //map을 다시 class 하나 만들어 매핑 => object 만들어짐
 //책 modeling
 
-class MaterialMain extends StatefulWidget {
+class MaterialMain extends StatefulWidget { //상태가 변경될 수 있는 위젯, 화면에 표시되는 위젯의 상태 관리
   @override
   State<MaterialMain> createState() => _MaterialMain();
 }
 
-class _MaterialMain extends State<MaterialMain> {
+class _MaterialMain extends State<MaterialMain> { //build메서드 오버라이딩하여 위젯의 UI관리
   static final String STR_URL = "http://www.google.com"; //1
   static final String API_SERVER = 'https://dapi.kakao.com/v3/search/book';
   static final String REST_API_KEY = '3a0085897e5ff0a2c34c1d67adeba26f';
 
-  String strResult = " ";
+  String strResult = " "; //검색결과 저장하는 문자열 변수
 
-  List<Book> bookList = List.empty(growable: true);
+  List<Book> bookList = List.empty(growable: true); //검색된 도서 목록 저장하는 리스트
 
   //검색 기능
   TextEditingController _tecStrSearchQuery = TextEditingController();
@@ -54,8 +53,8 @@ class _MaterialMain extends State<MaterialMain> {
       ),
       body: Container(
           child: bookList.isEmpty //booklist비었니 물어봄
-              ? Text("No data")
-              : ListView.separated(
+              ? Text("No data") //검색결과 없을때
+              : ListView.separated( //있을때 / ListView.Builder 형태에서 구분선이 필요할 때 사용.
                   itemCount: bookList.length,
                   controller: _scrollController, //리스트뷰에 붙이는 스크롤 컨트롤러
                   separatorBuilder: (context, index) {
@@ -65,7 +64,7 @@ class _MaterialMain extends State<MaterialMain> {
                     );
                   },
                   itemBuilder: (context, index) {
-                    return ListTile(
+                    return ListTile( //리스트뷰 각 항목에 대한 아이콘, 텍스트 등 나열
                       leading: ConstrainedBox(
                         constraints:
                             BoxConstraints(minWidth: 80, minHeight: 80),
@@ -90,7 +89,7 @@ class _MaterialMain extends State<MaterialMain> {
                     );
                   },
                 )),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton( //검색 버튼 클릭시 _getBookList();호출되어 도서 목록 검색
         //1
         child: Icon(Icons.file_download),
         onPressed: () {
@@ -104,7 +103,7 @@ class _MaterialMain extends State<MaterialMain> {
   }
 
   @override
-  void initState()  {
+  void initState()  { //_scrollController에 대한 이벤트 리스너 등록, 스크롤 위치에 따라 페이지 변경
     super.initState();
     _scrollController.addListener(() {
       //scroll bottom check
@@ -125,29 +124,30 @@ class _MaterialMain extends State<MaterialMain> {
     });
   }
 
-
   void _getBookList() async {
     String strSearchTarget = 'target=title';
     String strSearchQuery = 'query=${_tecStrSearchQuery.value.text}';
     String strSearchPage = 'page=$_pageNumber';
     String strUrl = "$API_SERVER?$strSearchTarget&$strSearchQuery&$strSearchPage";
-
+//요청에는 Authorization 헤더에 REST API 키가 포함되어 전송
     var response = await http.get(
       Uri.parse(strUrl),
       headers: {"Authorization": "KakaoAK $REST_API_KEY"},
     );
 
     print(response.body);
-
+//응답은 JSON 형식으로 받아오며, jsonDecode 함수를 사용하여 JSON 문자열을 Map 데이터로 디코딩
     var jsonMapData = jsonDecode(response.body); //jsonmapdata들어옴
     var documentsMapList = jsonMapData['documents']
         as List; //doucument만 뽑아오기 / 리스트로 되어있어서 리스트로 받아옴
+    //documents 키에 해당하는 값을 리스트로 추출, 각 아이템을 Book.fromJson 메서드를 통해 Book 객체로 매핑
     bookList = documentsMapList
         .map((json) => Book.fromJson(json))
-        .toList(); //리스트 있는 원소 하나씩 해당 함수에 넣기?
+        .toList(); //이렇게 생성된 도서 객체들 bookList에 추가
     print("bookList size: ${bookList.length}");
   }
 
+  //get방식으로 URL에 접속하는 코드
   //async 시간 오래걸리니까 너는 별도로 수행해라 / 비동기로 수행
   void _httpDownloadUrl(String url) async {
     //1
